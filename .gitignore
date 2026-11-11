@@ -1,0 +1,55 @@
+# Python & virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Environment variables & GCP / API credentials (never commit secrets)
+.env
+.env.*
+!.env.example
+*.json
+!requirements.json
+!frontend/*.json
+!android/**/*.json
+*service-account*.json
+*credentials*.json
+
+# Local scratch, databases, and uploaded/sample media (never commit car data)
+scratch/
+*.db
+*.sqlite
+*.sqlite3
+*.mp4
+*.mov
+*.webm
+*.avi
+*.mkv
+*.m4v
+*.csv
+*.parquet
+
+# Android / Gradle build outputs & local SDK config
+android/.gradle/
+android/build/
+android/app/build/
+android/.idea/
+android/local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.keystore
+*.jks
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

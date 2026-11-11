@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a73e8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Cymbal Auto Group — Trade-In Appraisal &amp; Valuation</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Top App Bar -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-logo" aria-hidden="true">
+        <span class="dot blue"></span>
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <div>
+        <div class="brand-title-row">
+          <h1 class="brand-title">Cymbal Auto Group</h1>
+          <span class="brand-badge">Trade-In Appraiser</span>
+        </div>
+        <p class="brand-subtitle">Multi-Site Vehicle Walkaround Inspection, DVLA Lookup &amp; Valuation</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <div class="status-pill" id="systemStatusPill" role="status" aria-live="polite">
+        <span class="status-indicator online" id="statusDot"></span>
+        <span id="statusText">System Online</span>
+      </div>
+
+      <button type="button" id="openQrModalBtn" class="btn btn-primary btn-sm">
+        📱 Install on Phone (QR Code)
+      </button>
+
+      <div class="salesperson-box">
+        <label for="activeSalesperson" class="salesperson-label">Salesperson</label>
+        <select id="activeSalesperson" name="activeSalesperson" class="salesperson-select">
+          <option value="">Select or add salesperson...</option>
+        </select>
+        <button type="button" id="openAddSalespersonBtn" class="btn btn-tonal btn-sm">
+          ＋ Add Salesperson
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Navigation Tabs -->
+  <nav class="dashboard-nav" aria-label="Main Dashboard Views">
+    <div class="nav-container">
+      <button type="button" class="nav-tab active" id="tabRecordBtn" aria-selected="true" aria-controls="panelRecord">
+        <span class="tab-icon" aria-hidden="true">🎥</span>
+        <span>Record Vehicle</span>
+        <span class="tab-chip">Inspector &amp; Valuation</span>
+      </button>
+      <button type="button" class="nav-tab" id="tabSearchBtn" aria-selected="false" aria-controls="panelSearch">
+        <span class="tab-icon" aria-hidden="true">🔍</span>
+        <span>Search Vehicle</span>
+        <span class="tab-chip" id="navInventoryCount">0 Vehicles</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User-friendly Notification Banner -->
+  <div id="notificationBanner" class="notification-banner hidden" role="alert" aria-live="assertive">
+    <span id="notificationMessage"></span>
+    <button type="button" id="closeNotificationBtn" class="banner-close" aria-label="Dismiss notification">✕</button>
+  </div>
+
+  <main class="main-container">
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: RECORD VEHICLE                                                -->
+    <!-- ===================================================================== -->
+    <section id="panelRecord" class="view-panel active" aria-labelledby="tabRecordBtn">
+      <div class="record-workspace-grid">
+        <!-- Left Column: Phone Camera / Video Recorder + Voice Dialogue Capture -->
+        <div class="capture-column">
+          <div class="card video-capture-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">1. Record Walkaround Video</h2>
+                <p class="card-subtitle">Walk around the vehicle and describe its condition, history, and features aloud</p>
+              </div>
+              <span class="badge badge-blue" id="captureStatusBadge">Ready to Record</span>
+            </div>
+
+            <div class="video-viewport-wrapper">
+              <video id="cameraPreview" class="video-viewport" playsinline controls></video>
+              <div class="video-overlay-hud">
+                <span class="hud-pill" id="hudRegBadge">Plate: Waiting for video</span>
+                <span class="hud-pill hud-voice" id="hudVoiceBadge">🎙️ Voice Isolation: Active</span>
+                <span class="hud-pill hud-timer" id="hudTimer">00:00</span>
+              </div>
+            </div>
+
+            <div class="capture-actions">
+              <label for="phoneCameraInput" id="triggerPhoneRecordBtn" class="btn btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                📱 Record Video on Phone Camera
+              </label>
+              <input
+                type="file"
+                id="phoneCameraInput"
+                name="phoneCameraInput"
+                accept="video/*,video/mp4,video/quicktime,video/webm,video/3gpp"
+                capture="environment"
+                class="visually-hidden"
+              >
+
+              <button type="button" id="startCameraBtn" class="btn btn-secondary">
+                📷 Live In-App Camera
+              </button>
+              <button type="button" id="recordClipBtn" class="btn btn-danger hidden">
+                ⏺ Start Recording
+              </button>
+
+              <label for="videoFileInput" id="triggerChooseVideoBtn" class="btn btn-outline" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                📤 Choose Saved Video
+              </label>
+              <input
+                type="file"
+                id="videoFileInput"
+                name="videoFileInput"
+                accept="video/*,video/mp4,video/quicktime,video/webm,video/3gpp"
+                class="visually-hidden"
+              >
+            </div>
+
+            <!-- Prominent Visual Indicator when Video is Selected -->
+            <div id="selectedVideoChip" class="selected-video-banner hidden">
+              <div class="selected-video-content">
+                <span class="video-icon" aria-hidden="true">🎬</span>
+                <div class="video-info">
+                  <div class="video-name-row">
+                    <strong id="selectedVideoName">video.mp4</strong>
+                    <span class="badge badge-green" id="selectedVideoBadge">Ready for Inspection</span>
+                  </div>
+                  <span class="video-meta" id="selectedVideoMeta">0.0 MB • Tap "Inspect Vehicle" below to analyse</span>
+                </div>
+              </div>
+              <button type="button" id="clearSelectedVideoBtn" class="btn btn-tonal btn-sm">✕ Remove</button>
+            </div>
+
+            <!-- Salesperson Spoken Dialogue & Registration Input -->
+            <form id="inspectTriggerForm" action="/api/inspect" method="POST" class="spoken-dialogue-box">
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="registrationHint">Registration Number (Optional if clearly visible in video)</label>
+                  <span class="hint-tag">Official DVLA Lookup</span>
+                </div>
+                <input
+                  type="text"
+                  id="registrationHint"
+                  name="registrationHint"
+                  placeholder="Enter registration plate (e.g. AB21 XYZ)"
+                  autocomplete="off"
+                  maxlength="12"
+                >
+              </div>
+
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="spokenTranscriptInput">Salesperson Spoken Notes (Live Voice Dictation)</label>
+                  <button type="button" id="dictateSpeechBtn" class="btn-link">🎙️ Tap to Dictate</button>
+                </div>
+                <textarea
+                  id="spokenTranscriptInput"
+                  name="spokenTranscriptInput"
+                  rows="3"
+                  placeholder="Talk about the car while recording (service history, keys, tyre wear, alloy condition, customer notes)..."
+                ></textarea>
+                <span id="speechHelp" class="field-hint">
+                  Optimised for human dialogue: background noise, mumblings, and repeated comments are filtered out and summarised into bullet points.
+                </span>
+              </div>
+
+              <div id="inspectFormError" class="field-error-banner hidden" role="alert"></div>
+
+              <button type="submit" id="runAgentsBtn" class="btn btn-primary btn-full">
+                ✨ Inspect Vehicle &amp; Calculate Trade-In Valuation
+              </button>
+            </form>
+          </div>
+
+          <!-- Inspection & Valuation Progress Pipeline -->
+          <div class="card agent-pipeline-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Automated Inspection &amp; Valuation Progress</h3>
+                <p class="card-subtitle">Vehicle Inspector &amp; Valuation Bot</p>
+              </div>
+              <span class="badge badge-green" id="pipelineStateBadge">Ready</span>
+            </div>
+
+            <ol class="pipeline-steps" id="pipelineStepsList">
+              <li class="pipeline-step" data-step="upload">
+                <span class="step-dot">1</span>
+                <div class="step-body">
+                  <strong>Save Walkaround Video</strong>
+                  <p>Links the recorded video to the vehicle registration number</p>
+                </div>
+              </li>
+              <li class="pipeline-step" data-step="video">
+                <span class="step-dot">2</span>
+                <div class="step-body">
+                  <strong>Vehicle Inspector: Video &amp; Dialogue Analysis</strong>
+                  <p>Detects trim variants, interior/exterior condition (1–10), modifications &amp; bullet-point comments</p>
+                </div>
+              </li>
+              <li class="pipeline-step" data-step="dvla">
+                <span class="step-dot">3</span>
+                <div class="step-body">
+                  <strong>Official DVLA Priority Lookup &amp; MOT Check</strong>
+                  <p>Prioritises official DVLA registration details and checks 3rd-party MOT status</p>
+                </div>
+              </li>
+              <li class="pipeline-step" data-step="valuation">
+                <span class="step-dot">4</span>
+                <div class="step-body">
+                  <strong>Valuation Bot: Market Comparables (±10% Age &amp; Mileage)</strong>
+                  <p>Finds matching vehicles for sale or recently sold and suggests a trade-in price</p>
+                </div>
+              </li>
+            </ol>
+
+            <details class="skills-drawer">
+              <summary>View Active Vehicle Inspector Skills</summary>
+              <div id="skillsRegistryList" class="skills-registry-list"></div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Right Column: Structured Vehicle Appraisal Form & Valuation Bot Output -->
+        <div class="inspection-column">
+          <div class="card inspection-form-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">2. Vehicle Appraisal &amp; Trade-In Offer</h2>
+                <p class="card-subtitle">Official DVLA details take priority; video inspection adds variants, condition &amp; comments</p>
+              </div>
+              <span class="uk-plate-badge" id="headerPlatePreview">REG PLATE</span>
+            </div>
+
+            <!-- Dynamic Verification Banner for Section 2 -->
+            <div id="section2AlertBanner" class="selected-video-banner hidden" style="margin-block-end: 1.25rem;">
+              <div class="selected-video-content">
+                <span class="video-icon" aria-hidden="true">📋</span>
+                <div class="video-info">
+                  <strong id="section2AlertTitle">Vehicle Walkaround Analysed</strong>
+                  <p id="section2AlertDesc" class="video-meta">Extracted vehicle details are populated below.</p>
+                </div>
+              </div>
+            </div>
+
+            <form id="saveVehicleForm" action="/api/vehicles" method="POST" novalidate>
+              <!-- Identity & Official DVLA Fields -->
+              <fieldset class="form-fieldset">
+                <legend class="fieldset-legend">Vehicle Identity</legend>
+                <div class="form-grid-3">
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldReg">Registration Number *</label>
+                      <span class="source-pill dvla" id="src_registration_number">DVLA Verified</span>
+                    </div>
+                    <div class="input-with-action" style="display: flex; gap: 6px; align-items: stretch;">
+                      <input
+                        type="text"
+                        id="fieldReg"
+                        name="registration_number"
+                        required
+                        class="uk-plate-input"
+                        placeholder="e.g. AB21 XYZ"
+                        style="flex: 1;"
+                      >
+                      <button type="button" id="lookupDvlaBtn" class="btn btn-tonal btn-sm" title="Lookup official DVLA register specifications for this plate">🔍 DVLA</button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldVin">VIN</label>
+                      <span class="source-pill video" id="src_vin">Video Inspection</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldVin"
+                      name="vin"
+                      placeholder="17-character VIN"
+                    >
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldYear">Registration Year *</label>
+                      <span class="source-pill dvla" id="src_year">DVLA Verified</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="fieldYear"
+                      name="year"
+                      inputmode="numeric"
+                      min="1990"
+                      max="2027"
+                      required
+                      placeholder="e.g. 2021"
+                    >
+                  </div>
+                </div>
+
+                <div class="form-grid-3">
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldMake">Make *</label>
+                      <span class="source-pill dvla" id="src_make">DVLA Verified</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldMake"
+                      name="make"
+                      required
+                      placeholder="e.g. Honda, BMW"
+                    >
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldModel">Model *</label>
+                      <span class="source-pill dvla" id="src_model">DVLA + Video</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldModel"
+                      name="model"
+                      required
+                      placeholder="e.g. Base Model"
+                    >
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldColour">Colour *</label>
+                      <span class="source-pill dvla" id="src_colour">DVLA Verified</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldColour"
+                      name="colour"
+                      required
+                      placeholder="e.g. Blue, White"
+                    >
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldVariant">Variant / Special Edition</label>
+                      <span class="source-pill video" id="src_variant">Video Inspection</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldVariant"
+                      name="variant"
+                      placeholder="Detected trim or edition"
+                    >
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldMileage">Mileage *</label>
+                      <span class="source-pill video" id="src_mileage">Video Inspection</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="fieldMileage"
+                      name="mileage"
+                      inputmode="numeric"
+                      min="0"
+                      max="500000"
+                      required
+                      placeholder="e.g. 32000"
+                    >
+                  </div>
+                </div>
+              </fieldset>
+
+              <!-- Condition Inside & Outside + Modifications + MOT -->
+              <fieldset class="form-fieldset">
+                <legend class="fieldset-legend">Condition Rating, Modifications &amp; MOT Status</legend>
+                <div class="form-grid-2">
+                  <div class="condition-box">
+                    <div class="label-row">
+                      <label for="fieldCondInside">Condition Inside (Rate out of 10) *</label>
+                      <span class="rating-pill" id="condInsideDisplay">8 / 10</span>
+                    </div>
+                    <input type="range" id="fieldCondInside" name="condition_inside" min="1" max="10" value="8" class="range-slider">
+                    <label for="fieldCondInsideIssues" class="sub-label">Interior Damage, Wear &amp; Tear Notes</label>
+                    <textarea
+                      id="fieldCondInsideIssues"
+                      name="condition_inside_issues"
+                      rows="2"
+                      placeholder="Note any interior wear, upholstery marks, or trim damage..."
+                    ></textarea>
+                  </div>
+
+                  <div class="condition-box">
+                    <div class="label-row">
+                      <label for="fieldCondOutside">Condition Outside (Rate out of 10) *</label>
+                      <span class="rating-pill" id="condOutsideDisplay">8 / 10</span>
+                    </div>
+                    <input type="range" id="fieldCondOutside" name="condition_outside" min="1" max="10" value="8" class="range-slider">
+                    <label for="fieldCondOutsideIssues" class="sub-label">Exterior Damage, Wear &amp; Tear Notes</label>
+                    <textarea
+                      id="fieldCondOutsideIssues"
+                      name="condition_outside_issues"
+                      rows="2"
+                      placeholder="Note any stone chips, dents, scratches, or alloy wheel scuffs..."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldModifications">Modifications</label>
+                      <span class="source-pill video" id="src_modifications">Video Inspection</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldModifications"
+                      name="modifications"
+                      placeholder="e.g. None, tinted windows, aftermarket alloys"
+                    >
+                  </div>
+
+                  <div class="form-group">
+                    <div class="label-row">
+                      <label for="fieldMotStatus">MOT Status *</label>
+                      <span class="source-pill mot" id="src_mot_status">MOT History</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="fieldMotStatus"
+                      name="mot_status"
+                      required
+                      placeholder="e.g. Valid until Nov 2027"
+                    >
+                  </div>
+                </div>
+              </fieldset>
+
+              <!-- Salesperson Voice Comments (Bullet Points) -->
+              <fieldset class="form-fieldset">
+                <legend class="fieldset-legend">Comments from Salesperson (Bullet-Point Summary)</legend>
+                <div class="form-group">
+                  <div class="label-row">
+                    <label for="fieldComments">Relevant Vehicle Comments (Filtered for Human Dialogue)</label>
+                    <span class="source-pill voice" id="src_comments">Voice Notes</span>
+                  </div>
+                  <textarea
+                    id="fieldComments"
+                    name="comments"
+                    rows="4"
+                    placeholder="• Bullet points summarised from your spoken commentary will appear here..."
+                  ></textarea>
+                </div>
+              </fieldset>
+
+              <!-- Valuation Bot Output & Pricing -->
+              <fieldset class="form-fieldset valuation-fieldset">
+                <legend class="fieldset-legend">Valuation Bot — Suggested Trade-In Price &amp; Market Comparables</legend>
+                <div class="valuation-Banner">
+                  <div class="valuation-price-grid">
+                    <div class="form-group price-card trade-in">
+                      <div class="label-row">
+                        <label for="fieldPurchaseValue">Purchase Value (Trade-In Offer £) *</label>
+                        <span class="source-pill bot">Valuation Bot</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="fieldPurchaseValue"
+                        name="purchase_value"
+                        step="1"
+                        min="0"
+                        required
+                        placeholder="0"
+                      >
+                    </div>
+
+                    <div class="form-group price-card retail">
+                      <div class="label-row">
+                        <label for="fieldRetailValue">Retail Value (To Resell £) *</label>
+                        <span class="source-pill bot">Valuation Bot</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="fieldRetailValue"
+                        name="retail_value"
+                        step="1"
+                        min="0"
+                        required
+                        placeholder="0"
+                      >
+                    </div>
+
+                    <div class="price-card margin-summary">
+                      <span class="margin-label">Estimated Retail Margin</span>
+                      <strong class="margin-value" id="estimatedMarginDisplay">£0</strong>
+                      <button type="button" id="recalcValuationBtn" class="btn btn-tonal btn-sm">
+                        🔄 Update Valuation
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="valuation-rationale" id="valuationRationaleText">
+                    Record or upload a vehicle walkaround video (or enter make, model, year, and mileage and tap Update Valuation) to view matching vehicles for sale or recently sold.
+                  </p>
+
+                  <div class="comparables-header">
+                    <h4>Similar Vehicles For Sale &amp; Recently Sold (Same Make/Model • Age &amp; Mileage ±10%)</h4>
+                    <span class="badge badge-blue" id="mileageWindowBadge">±10% Mileage Match</span>
+                  </div>
+                  <div id="comparablesGrid" class="comparables-grid"></div>
+                </div>
+              </fieldset>
+
+              <input type="hidden" id="fieldVideoGcsUri" name="video_gcs_uri" value="">
+              <input type="hidden" id="fieldVideoUrl" name="video_url" value="">
+
+              <div class="form-submit-bar">
+                <span class="field-hint">Saves vehicle appraisal with current date, time, and selected salesperson.</span>
+                <button type="submit" id="saveVehicleBtn" class="btn btn-success btn-lg">
+                  💾 Save Vehicle Record
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: SEARCH VEHICLE                                                -->
+    <!-- ===================================================================== -->
+    <section id="panelSearch" class="view-panel" aria-labelledby="tabSearchBtn" hidden>
+      <div class="card search-card">
+        <div class="card-header">
+          <div>
+            <h2 class="section-heading">Search Trade-In Vehicles</h2>
+            <p class="section-desc">
+              Select which fields to search on, filter by price or mileage, and mark vehicles as <strong>Sold</strong>.
+            </p>
+          </div>
+          <button type="button" id="resetSearchBtn" class="btn btn-outline">Reset Filters</button>
+        </div>
+
+        <form id="searchVehiclesForm" action="/api/vehicles/search" method="GET" class="search-form">
+          <div class="search-top-row">
+            <div class="form-group search-query-group">
+              <label for="searchQueryInput">Search Keyword (Registration, Make, Model, Colour, Date, Salesperson, Comments)</label>
+              <input
+                type="search"
+                id="searchQueryInput"
+                name="query_text"
+                placeholder="Enter registration plate, make, model, colour, date, or salesperson..."
+              >
+            </div>
+            <div class="search-submit-wrap">
+              <button type="submit" id="executeSearchBtn" class="btn btn-primary">
+                🔍 Search Vehicles
+              </button>
+            </div>
+          </div>
+
+          <!-- Selectable Fields to Search On -->
+          <fieldset class="form-fieldset search-fields-fieldset">
+            <legend class="fieldset-legend">Select Fields to Search On</legend>
+            <div class="checkbox-pills-row">
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="registration_number" checked> Registration Plate</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="vin" checked> VIN</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="make" checked> Make</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="model" checked> Model</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="colour" checked> Colour</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="mot_status" checked> MOT Status</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="modifications" checked> Modifications</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="comments" checked> Comments</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="salesperson" checked> Salesperson</label>
+              <label class="checkbox-pill"><input type="checkbox" name="search_field" value="recorded_at" checked> Date</label>
+            </div>
+          </fieldset>
+
+          <!-- Range & Attribute Filters -->
+          <fieldset class="form-fieldset">
+            <legend class="fieldset-legend">Filter by Price, Mileage, Colour &amp; Sale Status</legend>
+            <div class="filter-grid">
+              <div class="form-group">
+                <label for="filterMake">Make</label>
+                <input type="text" id="filterMake" name="make_filter" placeholder="All Makes">
+              </div>
+
+              <div class="form-group">
+                <label for="filterColour">Colour</label>
+                <input type="text" id="filterColour" name="colour_filter" placeholder="Any Colour">
+              </div>
+
+              <div class="form-group">
+                <label for="filterMinPrice">Min Price (£)</label>
+                <input type="number" id="filterMinPrice" name="min_price" inputmode="numeric" placeholder="Min £" min="0" step="500">
+              </div>
+
+              <div class="form-group">
+                <label for="filterMaxPrice">Max Price (£)</label>
+                <input type="number" id="filterMaxPrice" name="max_price" inputmode="numeric" placeholder="Max £" min="0" step="500">
+              </div>
+
+              <div class="form-group">
+                <label for="filterMinMileage">Min Mileage</label>
+                <input type="number" id="filterMinMileage" name="min_mileage" inputmode="numeric" placeholder="Min miles" min="0" step="1000">
+              </div>
+
+              <div class="form-group">
+                <label for="filterMaxMileage">Max Mileage</label>
+                <input type="number" id="filterMaxMileage" name="max_mileage" inputmode="numeric" placeholder="Max miles" min="0" step="1000">
+              </div>
+
+              <div class="form-group">
+                <label for="filterSoldStatus">Sale Status</label>
+                <select id="filterSoldStatus" name="sold_filter">
+                  <option value="all">All Vehicles</option>
+                  <option value="available">Available in Stock</option>
+                  <option value="sold">Sold Only</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="filterSortBy">Sort By</label>
+                <select id="filterSortBy" name="sort_by">
+                  <option value="recorded_at_desc">Date Recorded (Newest First)</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="mileage_asc">Mileage: Low to High</option>
+                  <option value="mileage_desc">Mileage: High to Low</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+        </form>
+      </div>
+
+      <!-- Vehicle Results Cards Grid -->
+      <div id="searchResultsGrid" class="results-card-grid" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Light-Dismiss Modal Dialog: Add New Salesperson User -->
+  <dialog id="addSalespersonDialog" closedby="any" aria-labelledby="addSalespersonTitle" class="vehicle-dialog">
+    <div class="dialog-content-box">
+      <div class="dialog-header">
+        <div>
+          <h2 id="addSalespersonTitle" class="dialog-title">Add Salesperson to Database</h2>
+          <p class="card-subtitle">Register a new salesperson so they can record and manage trade-in appraisals</p>
+        </div>
+        <button type="button" id="closeSalespersonDialogBtn" class="btn btn-outline btn-sm">Close</button>
+      </div>
+
+      <form id="addSalespersonForm" action="/api/salespeople" method="POST">
+        <div class="form-group">
+          <label for="newSalespersonName">Salesperson Full Name *</label>
+          <input
+            type="text"
+            id="newSalespersonName"
+            name="name"
+            required
+            autocomplete="name"
+            placeholder="e.g. Sarah Jenkins"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="newSalespersonBranch">Dealership Site / Branch</label>
+          <input
+            type="text"
+            id="newSalespersonBranch"
+            name="branch"
+            placeholder="e.g. Bristol Central, Manchester North"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="newSalespersonEmail">Work Email (Optional)</label>
+          <input
+            type="email"
+            id="newSalespersonEmail"
+            name="email"
+            autocomplete="email"
+            placeholder="e.g. sarah.jenkins@example.com"
+          >
+        </div>
+
+        <div class="form-submit-bar">
+          <span class="field-hint">Saved directly to the dealership staff database.</span>
+          <button type="submit" id="saveSalespersonBtn" class="btn btn-primary">
+            ＋ Save Salesperson
+          </button>
+        </div>
+      </form>
+
+      <div style="margin-block-start: 1.25rem; border-block-start: 1px solid var(--border-color); padding-block-start: 1rem;">
+        <h3 class="card-title" style="font-size: 0.95rem; margin-block-end: 0.5rem;">Registered Salespeople</h3>
+        <div id="registeredSalespeopleList" class="skills-registry-list"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Light-Dismiss Modal Dialog: Full Vehicle Details, Comparables & Video -->
+  <dialog id="vehicleDetailDialog" closedby="any" aria-labelledby="dialogVehicleTitle" class="vehicle-dialog">
+    <div class="dialog-content-box">
+      <div class="dialog-header">
+        <div>
+          <span class="uk-plate-badge" id="dialogPlateBadge">PLATE</span>
+          <h2 id="dialogVehicleTitle" class="dialog-title">Vehicle Inspection Report</h2>
+        </div>
+        <button type="button" id="closeDialogBtn" class="btn btn-outline btn-sm">Close</button>
+      </div>
+      <div id="dialogBody" class="dialog-body"></div>
+    </div>
+  </dialog>
+
+  <!-- Light-Dismiss Modal Dialog: QR Code & Android App Install -->
+  <dialog id="qrModalDialog" closedby="any" aria-labelledby="qrModalTitle" class="vehicle-dialog">
+    <div class="dialog-content-box qr-dialog-box">
+      <div class="dialog-header">
+        <div>
+          <h2 id="qrModalTitle" class="dialog-title">📱 Scan to Install on Android Phone</h2>
+          <p class="card-subtitle">Open your phone camera, scan the QR code, and tap <strong>Install App</strong></p>
+        </div>
+        <button type="button" id="closeQrDialogBtn" class="btn btn-outline btn-sm">Close</button>
+      </div>
+
+      <div class="qr-dialog-body">
+        <div class="qr-code-frame">
+          <img id="qrCodeImg" src="/api/qr-code.png" alt="Scan QR code to install Cymbal Vehicle ID on your phone" width="240" height="240">
+          <span class="qr-url-chip" id="qrTargetUrlDisplay">Current deployment URL</span>
+        </div>
+
+        <div class="qr-instructions-list">
+          <div class="qr-step">
+            <span class="step-badge">1</span>
+            <div>
+              <strong>Scan with Phone Camera</strong>
+              <p>Open your Android phone's camera app and point it at the QR code.</p>
+            </div>
+          </div>
+          <div class="qr-step">
+            <span class="step-badge">2</span>
+            <div>
+              <strong>Open in Chrome &amp; Install</strong>
+              <p>Tap the banner in Chrome to <strong>Install Cymbal Vehicle ID</strong> or tap Chrome menu (<strong>⋮</strong>) → <strong>Install App / Add to Home screen</strong>.</p>
+            </div>
+          </div>
+          <div class="qr-step">
+            <span class="step-badge">3</span>
+            <div>
+              <strong>Instant Fullscreen Mobile App</strong>
+              <p>Launches from your phone's home screen as a standalone app with full rear camera recording, voice filtering, and offline support.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

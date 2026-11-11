@@ -1,0 +1,17 @@
+services:
+  vehicle-id-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-your-gcp-project-id}
+      - GOOGLE_CLOUD_REGION=${GOOGLE_CLOUD_REGION:-us-central1}
+      - BQ_DATASET=${BQ_DATASET:-vehicle_id_demo}
+      - BQ_TABLE=${BQ_TABLE:-trade_in_vehicles}
+      - GCS_BUCKET=${GCS_BUCKET:-your-gcp-project-id-vehicle-videos}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
+    volumes:
+      - ~/.config/gcloud:/home/appuser/.config/gcloud:ro
